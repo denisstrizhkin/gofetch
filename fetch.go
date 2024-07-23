@@ -56,6 +56,18 @@ func ParseInt(s string) int {
 	return n
 }
 
+func GetOS() string {
+	return GetPatternFromFile("/etc/os-release", "PRETTY_NAME=\"(.+)\"")
+}
+
+func GetKernel() string {
+	return GetPatternFromFile("/proc/version", "Linux version (.+?)\\s")
+}
+
+func GetCPU() string {
+	return GetPatternFromFile("/proc/cpuinfo", "model name\\s+: (.+)")
+}
+
 func GetMem() string {
 	s_mem := GetPatternsFromFile(
 		"/proc/meminfo", []string{"MemTotal:\\s+([0-9]+)", "MemAvailable:\\s+([0-9]+)"},
@@ -84,6 +96,10 @@ func GetUptime() string {
 	return fmt.Sprintf("%d days, %d hours, %d mins", days, hours, mins)
 }
 
+func GetShell() string {
+	return os.Getenv("SHELL")
+}
+
 func GetPortage() string {
 	pkgs, err := filepath.Glob("/var/db/pkg/*/*")
 	if err != nil {
@@ -102,10 +118,11 @@ func PrintLine(w *bufio.Writer, key, val string) {
 func main() {
 	w := bufio.NewWriter(os.Stdout)
 	defer w.Flush()
-	PrintLine(w, "OS:", GetPatternFromFile("/etc/os-release", "PRETTY_NAME=\"(.+)\""))
-	PrintLine(w, "Kernel:", GetPatternFromFile("/proc/version", "Linux version (.+?)\\s"))
-	PrintLine(w, "CPU:", GetPatternFromFile("/proc/cpuinfo", "model name\\s+: (.+)"))
+	PrintLine(w, "OS:", GetOS())
+	PrintLine(w, "Kernel:", GetKernel())
+	PrintLine(w, "CPU:", GetCPU())
 	PrintLine(w, "Memory:", GetMem())
 	PrintLine(w, "Uptime:", GetUptime())
+	PrintLine(w, "Shell:", GetShell())
 	PrintLine(w, "Packages:", GetPortage())
 }
