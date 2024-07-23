@@ -149,11 +149,11 @@ func PrintLine(w *bufio.Writer, key, val string) {
 func main() {
 	w := bufio.NewWriter(os.Stdout)
 	defer w.Flush()
-	PrintLine(w, "OS:", GetOS())
-	PrintLine(w, "Kernel:", GetKernel())
-	PrintLine(w, "CPU:", GetCPU())
-	PrintLine(w, "Memory:", GetMem())
-	PrintLine(w, "Uptime:", GetUptime())
-	PrintLine(w, "Shell:", GetShell())
+	PrintLine(w, "OS:      ", GetOS())
+	PrintLine(w, "Kernel:  ", GetKernel())
+	PrintLine(w, "CPU:     ", GetCPU())
+	PrintLine(w, "Memory:  ", GetMem())
+	PrintLine(w, "Uptime:  ", GetUptime())
+	PrintLine(w, "Shell:   ", GetShell())
 	PrintLine(w, "Packages:", GetPortage())
 }
