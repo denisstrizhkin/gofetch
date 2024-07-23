@@ -62,13 +62,22 @@ func GetMem() string {
 	)
 	mem_total := float64(ParseInt(s_mem[0])) / 1024.0 / 1024.0
 	mem_avail := float64(ParseInt(s_mem[1])) / 1024.0 / 1024.0
-	return fmt.Sprintf("%.1f/%.1f GBs", mem_total-mem_avail, mem_total)
+	return fmt.Sprintf("%.2f / %.2f Gi", mem_total-mem_avail, mem_total)
 }
 
 func GetUptime() string {
 	s_seconds := GetPatternFromFile("/proc/uptime", "^([0-9]+)")
 	seconds := ParseInt(s_seconds)
-	return fmt.Sprintf("%dh %dm", seconds/60/60, seconds/60%60)
+	mins := seconds / 60 % 60
+	hours := seconds / 60 / 60 % 24
+	days := seconds / 60 / 60 / 24
+
+	if days == 0 && hours == 0 {
+		return fmt.Sprintf("%d mins", mins)
+	} else if days == 0 {
+		return fmt.Sprintf("%d hours, %d mins", hours, mins)
+	}
+	return fmt.Sprintf("%d days, %d hours, %d mins", days, hours, mins)
 }
 
 func GetPortage() string {
