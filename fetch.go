@@ -15,26 +15,37 @@ const (
 	COLOR_GREEN = "\033[0;32m"
 )
 
-func GetPatternFromFile(path, pattern string) string {
+func GetPatternsFromFile(path string, patterns []string) []string {
 	f, err := os.Open(path)
 	if err != nil {
 		log.Fatalln("opening file:", err)
 	}
 	defer f.Close()
 
+	res := make([]*regexp.Regexp, 0, len(patterns))
+	for _, pattern := range patterns {
+		res = append(res, regexp.MustCompile(pattern))
+	}
+
+	matches := make([]string, len(patterns))
 	bs := bufio.NewScanner(f)
-	re := regexp.MustCompile(pattern)
 	for bs.Scan() {
-		match := re.FindStringSubmatch(bs.Text())
-		if len(match) > 0 {
-			return match[1]
+		for i, re := range res {
+			match := re.FindStringSubmatch(bs.Text())
+			if len(match) > 0 {
+				matches[i] = match[1]
+			}
 		}
 	}
 
 	if err := bs.Err(); err != nil {
 		log.Fatalln("reading file:", err)
 	}
-	return "Uknown"
+	return matches
+}
+
+func GetPatternFromFile(path string, pattern string) string {
+	return GetPatternsFromFile(path, []string{pattern})[0]
 }
 
 func ParseInt(s string) int {
@@ -46,10 +57,11 @@ func ParseInt(s string) int {
 }
 
 func GetMem() string {
-	s_mem_total := GetPatternFromFile("/proc/meminfo", "MemTotal:\\s+([0-9]+)")
-	s_mem_avail := GetPatternFromFile("/proc/meminfo", "MemAvailable:\\s+([0-9]+)")
-	mem_total := float64(ParseInt(s_mem_total)) / 1024.0 / 1024.0
-	mem_avail := float64(ParseInt(s_mem_avail)) / 1024.0 / 1024.0
+	s_mem := GetPatternsFromFile(
+		"/proc/meminfo", []string{"MemTotal:\\s+([0-9]+)", "MemAvailable:\\s+([0-9]+)"},
+	)
+	mem_total := float64(ParseInt(s_mem[0])) / 1024.0 / 1024.0
+	mem_avail := float64(ParseInt(s_mem[1])) / 1024.0 / 1024.0
 	return fmt.Sprintf("%.1f/%.1f GBs", mem_total-mem_avail, mem_total)
 }
 
