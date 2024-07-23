@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -44,6 +45,15 @@ func GetPatternsFromFile(path string, patterns ...string) []string {
 	return matches
 }
 
+func RunCMD(name string, args ...string) string {
+	cmd := exec.Command(name, args...)
+	output, err := cmd.Output()
+	if err != nil {
+		log.Fatalln("running command", err)
+	}
+	return string(output)
+}
+
 func ParseInt(s string) int {
 	n, err := strconv.Atoi(s)
 	if err != nil {
@@ -57,14 +67,17 @@ func GetOS() string {
 		"/etc/os-release",
 		"^NAME=\"?([^\"]+)", "^VERSION=\"?([^\"]+)", "^VERSION_ID=\"?([^\"]+)",
 	)
+	s_arch := RunCMD("uname", "-m")
+	s_arch = s_arch[:len(s_arch)-1]
 	if len(s_os[1]) > 0 {
-		return fmt.Sprintf("%s %s", s_os[0], s_os[1])
+		return fmt.Sprintf("%s %s %s", s_os[0], s_os[1], s_arch)
 	}
-	return fmt.Sprintf("%s %s", s_os[0], s_os[2])
+	return fmt.Sprintf("%s %s %s", s_os[0], s_os[2], s_arch)
 }
 
 func GetKernel() string {
-	return GetPatternsFromFile("/proc/version", "Linux version (.+?)\\s")[0]
+	s_kernel := RunCMD("uname", "-sr")
+	return s_kernel[:len(s_kernel)-1]
 }
 
 func GetCPU() string {
