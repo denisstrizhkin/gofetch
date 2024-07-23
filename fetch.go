@@ -60,9 +60,13 @@ func GetMem() string {
 	s_mem := GetPatternsFromFile(
 		"/proc/meminfo", []string{"MemTotal:\\s+([0-9]+)", "MemAvailable:\\s+([0-9]+)"},
 	)
-	mem_total := float64(ParseInt(s_mem[0])) / 1024.0 / 1024.0
-	mem_avail := float64(ParseInt(s_mem[1])) / 1024.0 / 1024.0
-	return fmt.Sprintf("%.2f / %.2f Gi", mem_total-mem_avail, mem_total)
+	mem_total := float64(ParseInt(s_mem[0]))
+	mem_used := mem_total - float64(ParseInt(s_mem[1]))
+	mem_total /= 1024.0 * 1024.0
+	mem_used /= 1024.0 * 1024.0
+	mem_percent := mem_used * 100.0 / mem_total
+
+	return fmt.Sprintf("%.2f / %.2f Gi (%.0f%%)", mem_used, mem_total, mem_percent)
 }
 
 func GetUptime() string {
