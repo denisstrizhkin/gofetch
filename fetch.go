@@ -104,12 +104,27 @@ func GetUptime() string {
 	hours := seconds / 60 / 60 % 24
 	days := seconds / 60 / 60 / 24
 
-	if days == 0 && hours == 0 {
-		return fmt.Sprintf("%d mins", mins)
-	} else if days == 0 {
-		return fmt.Sprintf("%d hours, %d mins", hours, mins)
+	uptime := ""
+	if days > 0 {
+		uptime = fmt.Sprintf("%d day", days)
+		if days > 1 {
+			uptime += "s"
+		}
 	}
-	return fmt.Sprintf("%d days, %d hours, %d mins", days, hours, mins)
+	if hours > 0 {
+		uptime = fmt.Sprintf("%s, %d hour", uptime, hours)
+		if hours > 1 {
+			uptime += "s"
+		}
+	}
+	uptime = fmt.Sprintf("%s, %d min", uptime, mins)
+	if mins > 1 {
+		uptime += "s"
+	}
+	if uptime[0] == ',' {
+		return uptime[2:]
+	}
+	return uptime
 }
 
 func GetShell() string {
