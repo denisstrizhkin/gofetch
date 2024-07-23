@@ -15,7 +15,7 @@ const (
 	COLOR_GREEN = "\033[0;32m"
 )
 
-func GetPatternsFromFile(path string, patterns []string) []string {
+func GetPatternsFromFile(path string, patterns ...string) []string {
 	f, err := os.Open(path)
 	if err != nil {
 		log.Fatalln("opening file:", err)
@@ -44,10 +44,6 @@ func GetPatternsFromFile(path string, patterns []string) []string {
 	return matches
 }
 
-func GetPatternFromFile(path string, pattern string) string {
-	return GetPatternsFromFile(path, []string{pattern})[0]
-}
-
 func ParseInt(s string) int {
 	n, err := strconv.Atoi(s)
 	if err != nil {
@@ -59,7 +55,7 @@ func ParseInt(s string) int {
 func GetOS() string {
 	s_os := GetPatternsFromFile(
 		"/etc/os-release",
-		[]string{"^NAME=\"?([^\"]+)", "^VERSION=\"?([^\"]+)", "^VERSION_ID=\"?([^\"]+)"},
+		"^NAME=\"?([^\"]+)", "^VERSION=\"?([^\"]+)", "^VERSION_ID=\"?([^\"]+)",
 	)
 	if len(s_os[1]) > 0 {
 		return fmt.Sprintf("%s %s", s_os[0], s_os[1])
@@ -68,16 +64,16 @@ func GetOS() string {
 }
 
 func GetKernel() string {
-	return GetPatternFromFile("/proc/version", "Linux version (.+?)\\s")
+	return GetPatternsFromFile("/proc/version", "Linux version (.+?)\\s")[0]
 }
 
 func GetCPU() string {
-	return GetPatternFromFile("/proc/cpuinfo", "model name\\s+: (.+)")
+	return GetPatternsFromFile("/proc/cpuinfo", "model name\\s+: (.+)")[0]
 }
 
 func GetMem() string {
 	s_mem := GetPatternsFromFile(
-		"/proc/meminfo", []string{"MemTotal:\\s+([0-9]+)", "MemAvailable:\\s+([0-9]+)"},
+		"/proc/meminfo", "MemTotal:\\s+([0-9]+)", "MemAvailable:\\s+([0-9]+)",
 	)
 	mem_total := float64(ParseInt(s_mem[0]))
 	mem_used := mem_total - float64(ParseInt(s_mem[1]))
@@ -89,7 +85,7 @@ func GetMem() string {
 }
 
 func GetUptime() string {
-	s_seconds := GetPatternFromFile("/proc/uptime", "^([0-9]+)")
+	s_seconds := GetPatternsFromFile("/proc/uptime", "^([0-9]+)")[0]
 	seconds := ParseInt(s_seconds)
 	mins := seconds / 60 % 60
 	hours := seconds / 60 / 60 % 24
