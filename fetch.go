@@ -57,7 +57,14 @@ func ParseInt(s string) int {
 }
 
 func GetOS() string {
-	return GetPatternFromFile("/etc/os-release", "PRETTY_NAME=\"(.+)\"")
+	s_os := GetPatternsFromFile(
+		"/etc/os-release",
+		[]string{"^NAME=\"?([^\"]+)", "^VERSION=\"?([^\"]+)", "^VERSION_ID=\"?([^\"]+)"},
+	)
+	if len(s_os[1]) > 0 {
+		return fmt.Sprintf("%s %s", s_os[0], s_os[1])
+	}
+	return fmt.Sprintf("%s %s", s_os[0], s_os[2])
 }
 
 func GetKernel() string {
