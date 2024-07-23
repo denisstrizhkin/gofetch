@@ -15,33 +15,24 @@ const (
 	COLOR_GREEN = "\033[0;32m"
 )
 
-func ReadFile(path string) []string {
+func GetPatternFromFile(path, pattern string) string {
 	f, err := os.Open(path)
 	if err != nil {
 		log.Fatalln("opening file:", err)
 	}
 	defer f.Close()
 
-	var lines []string
 	bs := bufio.NewScanner(f)
+	re := regexp.MustCompile(pattern)
 	for bs.Scan() {
-		lines = append(lines, bs.Text())
+		match := re.FindStringSubmatch(bs.Text())
+		if len(match) > 0 {
+			return match[1]
+		}
 	}
 
 	if err := bs.Err(); err != nil {
 		log.Fatalln("reading file:", err)
-	}
-	return lines
-}
-
-func GetPatternFromFile(file, pattern string) string {
-	lines := ReadFile(file)
-	re := regexp.MustCompile(pattern)
-	for _, line := range lines {
-		match := re.FindStringSubmatch(line)
-		if len(match) > 0 {
-			return match[1]
-		}
 	}
 	return "Uknown"
 }
