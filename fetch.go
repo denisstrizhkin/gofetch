@@ -21,7 +21,8 @@ const (
 func GetPatternsFromFile(path string, patterns ...string) ([]string, error) {
 	f, err := os.Open(path)
 	if err != nil {
-		log.Fatalln("opening file:", err)
+		log.Printf("opening file - '%s': %v\n", path, err)
+		return nil, errors.New("couldn't get patterns")
 	}
 	defer f.Close()
 
