@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -9,6 +10,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"strings"
 )
 
 const (
@@ -16,7 +18,7 @@ const (
 	COLOR_GREEN = "\033[0;32m"
 )
 
-func GetPatternsFromFile(path string, patterns ...string) []string {
+func GetPatternsFromFile(path string, patterns ...string) ([]string, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		log.Fatalln("opening file:", err)
@@ -40,18 +42,20 @@ func GetPatternsFromFile(path string, patterns ...string) []string {
 	}
 
 	if err := bs.Err(); err != nil {
-		log.Fatalln("reading file:", err)
+		log.Printf("reading file - '%s': %v\n", path, err)
+		return nil, errors.New("couldn't get patterns")
 	}
-	return matches
+	return matches, nil
 }
 
-func RunCMD(name string, args ...string) string {
+func RunCMD(name string, args ...string) (string, error) {
 	cmd := exec.Command(name, args...)
 	output, err := cmd.Output()
 	if err != nil {
-		log.Fatalln("running command", err)
+		log.Printf("running command - '%s': %v\n", name, err)
+		return "", errors.New("couldn't run command")
 	}
-	return string(output)
+	return strings.TrimSpace(string(output)), nil
 }
 
 func ParseInt(s string) int {
@@ -63,31 +67,59 @@ func ParseInt(s string) int {
 }
 
 func GetOS() string {
-	s_os := GetPatternsFromFile(
+	osMatches, err := GetPatternsFromFile(
 		"/etc/os-release",
-		"^NAME=\"?([^\"]+)", "^VERSION=\"?([^\"]+)", "^VERSION_ID=\"?([^\"]+)",
+		"^NAME=\"?([^\"]+)", "^PRETTY_NAME=\"?([^\"]+)",
+		"^VERSION=\"?([^\"]+)", "^VERSION_ID=\"?([^\"]+)",
 	)
-	s_arch := RunCMD("uname", "-m")
-	s_arch = s_arch[:len(s_arch)-1]
-	if len(s_os[1]) > 0 {
-		return fmt.Sprintf("%s %s %s", s_os[0], s_os[1], s_arch)
+	var sOs, sVer string
+	if err != nil {
+		sOs = "Uknown OS"
+	} else {
+		if len(osMatches[1]) == 1 {
+			sOs = osMatches[1]
+		} else {
+			sOs = osMatches[0]
+		}
+		if len(osMatches[2]) == 1 {
+			sVer = osMatches[2]
+		} else {
+			sVer = osMatches[3]
+		}
 	}
-	return fmt.Sprintf("%s %s %s", s_os[0], s_os[2], s_arch)
+	sArch, err := RunCMD("uname", "-m")
+	if err != nil {
+		sArch = "Uknown Arch"
+	}
+	if len(sVer) > 0 {
+		return fmt.Sprintf("%s %s %s", sOs, sVer, sArch)
+	}
+	return fmt.Sprintf("%s %s", sOs, sArch)
 }
 
 func GetKernel() string {
-	s_kernel := RunCMD("uname", "-sr")
-	return s_kernel[:len(s_kernel)-1]
+	s_kernel, err := RunCMD("uname", "-sr")
+	if err != nil {
+		return "Uknown Kernel"
+	}
+	return s_kernel
 }
 
 func GetCPU() string {
-	return GetPatternsFromFile("/proc/cpuinfo", "model name\\s+: (.+)")[0]
+	matches, err := GetPatternsFromFile("/proc/cpuinfo", "model name\\s+: (.+)")
+	if err != nil {
+		return "Uknown CPU"
+	}
+	return matches[0]
 }
 
 func GetMem() string {
-	s_mem := GetPatternsFromFile(
+	s_mem, err := GetPatternsFromFile(
 		"/proc/meminfo", "MemTotal:\\s+([0-9]+)", "MemAvailable:\\s+([0-9]+)",
 	)
+	if err != nil {
+		return "Memory Info is Unavailable"
+	}
 	mem_total := float64(ParseInt(s_mem[0]))
 	mem_used := mem_total - float64(ParseInt(s_mem[1]))
 	mem_total /= 1024.0 * 1024.0
@@ -98,8 +130,11 @@ func GetMem() string {
 }
 
 func GetUptime() string {
-	s_seconds := GetPatternsFromFile("/proc/uptime", "^([0-9]+)")[0]
-	seconds := ParseInt(s_seconds)
+	s_seconds, err := GetPatternsFromFile("/proc/uptime", "^([0-9]+)")
+	if err != nil {
+		return "Runtime Info is Unavailable"
+	}
+	seconds := ParseInt(s_seconds[0])
 	mins := seconds / 60 % 60
 	hours := seconds / 60 / 60 % 24
 	days := seconds / 60 / 60 / 24
