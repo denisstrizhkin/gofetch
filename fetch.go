@@ -273,6 +273,7 @@ func main() {
 	default:
 		os_path = sOs
 	}
+	fmt.Println("----Your system info----")
 	PrintLine(w, "OS:      ", GetOS(os_path, sOs))
 	PrintLine(w, "Kernel:  ", GetKernel())
 	PrintLine(w, "CPU:     ", GetCPU(sOs))
